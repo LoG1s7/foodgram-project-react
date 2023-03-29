@@ -174,3 +174,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LEN_EMAIL = 254
 USER_LEN_NAME = 150
+LEN_TEXT = 200
