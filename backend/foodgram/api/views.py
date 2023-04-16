@@ -1,24 +1,19 @@
 # from api.filters import TitleFilter
-# from api.permissions import (AdminModeratorAuthorPermission, IsUserAdmin,
-#                              IsUserAdminOrReadOnly, ReviewsCommentsPermission)
+from api.permissions import RecipesPermission
 # from api.serializers import
-# from django.contrib.auth.tokens import default_token_generator
-# from django.core.mail import send_mail
 # from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from api.serializers import (TagSerializer, IngredientSerializer,
                              RecipeSerializer, PostRecipeSerializer,
-                             CustomUserSerializer, CreateUserSerializer)
+                             SubscribeSerializer, )
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 from rest_framework.status import HTTP_200_OK
-# from rest_framework_simplejwt.tokens import AccessToken
-# from djoser.views import UserViewSet
-from recipes.models import Ingredient, Recipe, Tag, Follow
+from recipes.models import Ingredient, Recipe, Tag, Subscribe
 from users.models import User
 
 
@@ -38,16 +33,32 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,
+                          RecipesPermission)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(author=self.request.user)
 
     def get_serializer_class(self):
-        if self.action in ('create', 'partial_update'):
-            return PostRecipeSerializer
-        return RecipeSerializer
-    # def get_recipe(self):
-    #     return get_object_or_404(Recipe, pk=self.kwargs.get("recipe_id"))
-    #
-    # def get_queryset(self):
-    #     return self.get_recipe().ingredients.all()
-    #
-    # def perform_create(self, serializer):
-    #     serializer.save(author=self.request.user, title=self.get_recipe())
+        if self.action in ('get', 'list'):
+            return RecipeSerializer
+        return PostRecipeSerializer
+
+
+class SubscribeViewSet(mixins.CreateModelMixin,
+                       mixins.ListModelMixin,
+                       viewsets.GenericViewSet):
+    serializer_class = SubscribeSerializer
+    # permission_classes = (IsAuthenticated, )
+    # filter_backends = (filters.SearchFilter,)
+    # search_fields = ('^following__username',)
+
+    def get_queryset(self):
+        return self.request.user.follower.all()
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+

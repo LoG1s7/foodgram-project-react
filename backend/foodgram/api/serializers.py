@@ -4,7 +4,10 @@ from django.core.exceptions import BadRequest
 from djoser.serializers import UserSerializer, UserCreateSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from recipes.models import Ingredient, Recipe, Tag, Follow, RecipeIngredient
+from rest_framework.validators import UniqueTogetherValidator
+
+from recipes.models import (Ingredient, Recipe, Tag, RecipeIngredient,
+                            Subscribe, )
 from users.models import User
 # from reviews.validators import validate_year
 from users.validators import validate_me_name
@@ -60,13 +63,26 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
+    id = serializers.PrimaryKeyRelatedField(
+        queryset=Ingredient.objects.all()
+    )
 
     class Meta:
-        fields = ('id', 'amount')
+
+        fields = ('id', 'amount', )
         model = RecipeIngredient
 
 
 class ReadRecipeIngredientSerializer(serializers.ModelSerializer):
+    id = serializers.PrimaryKeyRelatedField(
+        read_only=True, source='ingredient.id'
+    )
+    name = serializers.StringRelatedField(
+        read_only=True, source='ingredient.name'
+    )
+    measurement_unit = serializers.StringRelatedField(
+        read_only=True, source='ingredient.measurement_unit'
+    )
 
     class Meta:
         fields = ('id', 'name', 'measurement_unit', 'amount')
@@ -74,14 +90,19 @@ class ReadRecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    is_favorited = serializers.BooleanField()
-    is_in_shopping_cart = serializers.BooleanField()
-    ingredients = RecipeIngredientSerializer(many=True, )
+    # is_favorited = serializers.BooleanField()
+    # is_in_shopping_cart = serializers.BooleanField()
+    ingredients = serializers.SerializerMethodField()
+    author = CustomUserSerializer(read_only=True)
+
+    def get_ingredients(self, obj):
+        ingredients = RecipeIngredient.objects.filter(recipe=obj).all()
+        return ReadRecipeIngredientSerializer(ingredients, many=True).data
 
     class Meta:
         fields = (
-            'id', 'tags', 'author', 'ingredients', 'is_favorited',
-            'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
+            'id', 'tags', 'author', 'ingredients',
+            'name', 'image', 'text', 'cooking_time'
         )
         model = Recipe
 
@@ -97,7 +118,7 @@ class PostRecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = (
-            'id', 'author', 'ingredients', 'tags', 'image', 'name', 'text',
+            'author', 'ingredients', 'tags', 'image', 'name', 'text',
             'cooking_time'
         )
         model = Recipe
@@ -106,22 +127,59 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)
-
+        recipe.tags.set(tags)
         for ingredient in ingredients:
             current_ingredient = get_object_or_404(
-                Ingredient, pk=ingredient['id']
+                Ingredient, pk=ingredient['id'].pk
             )
             RecipeIngredient.objects.create(
                 ingredient=current_ingredient,
                 recipe=recipe,
                 amount=ingredient['amount']
             )
-        for tag in tags:
-            current_tag = get_object_or_404(
-                Tag, pk=tag['id']
-            )
-            Recipe.tags.objects.create(
-                tag=current_tag,
-                recipe=recipe,
-            )
         return recipe
+
+    def update(self, instance, validated_data):
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+        instance = super().update(instance, validated_data)
+        instance.tags.clear()
+        instance.tags.set(tags)
+        instance.ingredients.clear()
+        for ingredient in ingredients:
+            current_ingredient = get_object_or_404(
+                Ingredient, pk=ingredient['id'].pk
+            )
+            RecipeIngredient.objects.create(
+                ingredient=current_ingredient,
+                recipe=instance,
+                amount=ingredient['amount']
+            )
+        instance.save()
+        return instance
+
+    def to_representation(self, instance):
+        instance = RecipeSerializer(instance).data
+        return instance
+
+
+class SubscribeSerializer(serializers.ModelSerializer):
+    user = serializers.SlugRelatedField(
+        slug_field='username', queryset=User.objects.all()
+    )
+    author = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='username',
+        default=serializers.CurrentUserDefault()
+    )
+
+    class Meta:
+        fields = ('user', 'author')
+        model = Subscribe
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Subscribe.objects.all(),
+                fields=('user', 'author'),
+                message='Нельзя подписаться дважды на автора'
+            ),
+        ]
