@@ -1,9 +1,9 @@
 from django.contrib import admin
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
-# from import_export.fields import Field
-# from import_export.widgets import ForeignKeyWidget
-from recipes.models import Ingredient, Recipe, Tag, Follow
+from import_export.fields import Field
+from import_export.widgets import ForeignKeyWidget
+from recipes.models import Ingredient, Recipe, Tag, Follow, RecipeIngredient
 
 
 class TagResource(resources.ModelResource):
@@ -33,6 +33,41 @@ class IngredientResource(resources.ModelResource):
 class IngredientAdmin(ImportExportModelAdmin):
     resource_classes = [IngredientResource]
     list_display = ('name', 'measurement_unit',)
+    search_fields = ('name',)
+    list_filter = ('name',)
+    empty_value_display = '-пусто-'
+
+
+class RecipeIngredientResource(resources.ModelResource):
+    recipe = Field(attribute='recipe', column_name='recipe_id',
+                   widget=ForeignKeyWidget(Recipe))
+    ingredient = Field(attribute='ingredient', column_name='ingredient_id',
+                       widget=ForeignKeyWidget(Ingredient))
+
+    class Meta:
+        model = RecipeIngredient
+        columns = ('id', 'recipe_id', 'ingredient_id', 'amount')
+
+
+class RecipeIngredientInline(admin.TabularInline):
+    model = RecipeIngredient
+
+
+class RecipeResource(resources.ModelResource):
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id', 'tags', 'author', 'ingredients', 'image', 'name', 'text',
+            'cooking_time',
+        )
+
+
+@admin.register(Recipe)
+class RecipeAdmin(ImportExportModelAdmin):
+    resource_classes = [RecipeResource, RecipeIngredientResource]
+    list_display = ('id', 'author', 'image', 'name', 'text', 'cooking_time',)
+    inlines = (RecipeIngredientInline, )
     search_fields = ('name',)
     list_filter = ('name',)
     empty_value_display = '-пусто-'

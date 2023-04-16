@@ -39,13 +39,18 @@ class Tag(BaseTagIngredient):
 
 
 class Recipe(models.Model):
-    tags = models.ManyToManyField(Tag, related_name='recipes')
+    tags = models.ManyToManyField(
+        Tag, related_name='recipes', verbose_name='Тэги'
+    )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='автор'
     )
-    ingredients = models.ManyToManyField(Ingredient, related_name='recipes')
+    ingredients = models.ManyToManyField(
+        Ingredient,
+        through='RecipeIngredient', verbose_name='Ингредиенты'
+    )
     image = models.ImageField(
         'Картинка',
     )
@@ -59,6 +64,12 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
+
+
+class RecipeIngredient(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    amount = models.IntegerField('Количество')
 
 
 class Follow(models.Model):
