@@ -3,7 +3,8 @@ from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from import_export.fields import Field
 from import_export.widgets import ForeignKeyWidget
-from recipes.models import Ingredient, Recipe, Tag, RecipeIngredient
+from recipes.models import (Ingredient, Recipe, Tag, RecipeIngredient,
+                            Subscribe, Favorite)
 
 
 class TagResource(resources.ModelResource):
@@ -70,4 +71,16 @@ class RecipeAdmin(ImportExportModelAdmin):
     inlines = (RecipeIngredientInline, )
     search_fields = ('name',)
     list_filter = ('name',)
+    empty_value_display = '-пусто-'
+
+
+@admin.register(Subscribe)
+class SubscribeAdmin(admin.ModelAdmin):
+    list_display = ('user', 'author',)
+    empty_value_display = '-пусто-'
+
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ('user', 'recipe',)
     empty_value_display = '-пусто-'

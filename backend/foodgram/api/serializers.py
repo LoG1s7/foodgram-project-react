@@ -7,10 +7,8 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from recipes.models import (Ingredient, Recipe, Tag, RecipeIngredient,
-                            Subscribe, )
+                            Subscribe, Favorite)
 from users.models import User
-# from reviews.validators import validate_year
-from users.validators import validate_me_name
 import base64
 from django.core.files.base import ContentFile
 
@@ -35,6 +33,12 @@ class CustomUserSerializer(UserSerializer):
         model = User
 
     def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        if request is not None:
+            current_user = request.user
+            if current_user.is_authenticated:
+                return Subscribe.objects.filter(user=current_user,
+                                                author=obj).exists()
         return False
 
 
@@ -163,18 +167,26 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         return instance
 
 
-class SubscribeSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(
-        slug_field='username', queryset=User.objects.all()
-    )
-    author = serializers.SlugRelatedField(
-        read_only=True,
-        slug_field='username',
-        default=serializers.CurrentUserDefault()
-    )
+class SubscribeRecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
-        fields = ('user', 'author')
+        fields = (
+            'id', 'name', 'image', 'cooking_time'
+        )
+        model = Recipe
+
+
+class SubscribeSerializer(serializers.ModelSerializer):
+    author = CustomUserSerializer(read_only=True)
+    recipes = SubscribeRecipeSerializer(
+        many=True,
+        read_only=True,
+        source='author.recipes'
+    )
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        fields = ('author', 'recipes', 'recipes_count')
         model = Subscribe
         validators = [
             UniqueTogetherValidator(
@@ -183,3 +195,48 @@ class SubscribeSerializer(serializers.ModelSerializer):
                 message='Нельзя подписаться дважды на автора'
             ),
         ]
+
+    def get_recipes_count(self, obj):
+        return obj.author.recipes.count()
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        return {
+            'email': representation['author']['email'],
+            'id': representation['author']['id'],
+            'username': representation['author']['username'],
+            'first_name': representation['author']['first_name'],
+            'last_name': representation['author']['last_name'],
+            'is_subscribed': representation['author']['is_subscribed'],
+            'recipes': representation['recipes'],
+            'recipes_count': representation['recipes_count'],
+        }
+
+    def validate_author(self, author):
+        if self.context['request'].user == author:
+            raise serializers.ValidationError('На себя подписаться нельзя')
+        return author
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    recipe = SubscribeRecipeSerializer(read_only=True)
+
+    class Meta:
+        fields = ('recipe', )
+        model = Favorite
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=('user', 'recipe'),
+                message='Нельзя добавить в избранное дважды'
+            ),
+        ]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        return {
+            'id': representation['recipe']['id'],
+            'name': representation['recipe']['name'],
+            'image': representation['recipe']['image'],
+            'cooking_time': representation['recipe']['cooking_time'],
+        }
