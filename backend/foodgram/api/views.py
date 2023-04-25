@@ -1,7 +1,12 @@
 # from api.filters import TitleFilter
 from api.permissions import RecipesPermission
-# from api.serializers import
 # from django.db import IntegrityError
+import io
+from django.http import FileResponse
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+from django.db.models import Sum, F
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from django.shortcuts import get_object_or_404
@@ -9,15 +14,18 @@ from django_filters.rest_framework import DjangoFilterBackend
 from api.serializers import (TagSerializer, IngredientSerializer,
                              RecipeSerializer, PostRecipeSerializer,
                              SubscribeSerializer, CustomUserSerializer,
-                             FavoriteSerializer)
-from rest_framework import mixins, status, viewsets
-from rest_framework.decorators import action, api_view
+                             FavoriteSerializer, ShoppingCartSerializer)
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
-from rest_framework.status import (HTTP_200_OK, HTTP_201_CREATED,
-                                   HTTP_204_NO_CONTENT)
-from recipes.models import Ingredient, Recipe, Tag, Subscribe, Favorite
+from rest_framework.status import (HTTP_201_CREATED, HTTP_204_NO_CONTENT)
+
+from foodgram.settings import ttfFile
+from recipes.models import (Ingredient, Recipe, Tag, Subscribe, Favorite,
+                            Cart, RecipeIngredient, )
+
 from users.models import User
 from djoser.views import UserViewSet
 
@@ -47,9 +55,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
     def get_serializer_class(self):
-        if self.action in ('get', 'list'):
-            return RecipeSerializer
-        return PostRecipeSerializer
+        if self.action in ('create', 'partial_update', 'destroy'):
+            return PostRecipeSerializer
+        return RecipeSerializer
+
+    def get_serializer_context(self):
+        return {'request': self.request}
 
     @action(
         methods=('POST', 'DELETE'),
@@ -69,6 +80,74 @@ class RecipeViewSet(viewsets.ModelViewSet):
         favorite = get_object_or_404(Favorite, user=user, recipe=recipe)
         favorite.delete()
         return Response(status=HTTP_204_NO_CONTENT)
+
+    @action(
+        methods=('POST', 'DELETE'),
+        url_path='shopping_cart',
+        detail=True,
+        permission_classes=[IsAuthenticated, ]
+    )
+    def add_to_shopping_cart(self, request, pk=None):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=pk)
+        if request.method == 'POST':
+            cart = Cart.objects.create(user=user, recipe=recipe)
+            serializer = ShoppingCartSerializer(
+                cart, context={"request": request}
+            )
+            return Response(serializer.data, status=HTTP_201_CREATED)
+        cart = get_object_or_404(Cart, user=user, recipe=recipe)
+        cart.delete()
+        return Response(status=HTTP_204_NO_CONTENT)
+
+    @action(
+        methods=('GET',),
+        url_path='download_shopping_cart',
+        detail=False,
+        permission_classes=[IsAuthenticated, ]
+    )
+    def download_shopping_cart(self, request):
+        user = self.request.user
+        if not user.cart.exists():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        items = RecipeIngredient.objects.select_related(
+            'recipe', 'ingredient'
+        )
+        items = items.filter(recipe__cart__user=user)
+        items = items.values(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(
+            name=F('ingredient__name'),
+            units=F('ingredient__measurement_unit'),
+            total=Sum('ingredient__recipeingredient__amount')
+        ).order_by('name')
+        pdfmetrics.registerFont(
+            TTFont(
+                'Montserrat-Medium',
+                ttfFile
+            )
+        )
+        buffer = io.BytesIO()
+        pdf_file = canvas.Canvas(buffer)
+        pdf_file.setFont('Montserrat-Medium', 24)
+        pdf_file.drawString(225, 800, 'Список покупок')
+        pdf_file.setFont('Montserrat-Medium', 16)
+        width = 70
+        height = 750
+        for i, item in enumerate(items, 1):
+            pdf_file.drawString(width, height, (
+                f'{i} - {item["name"]} - {item["units"]} - '
+                f'{item["total"]}'
+            ))
+            height -= 25
+        pdf_file.showPage()
+        pdf_file.save()
+        buffer.seek(0)
+        return FileResponse(
+            buffer,
+            as_attachment=True,
+            filename='buy_list.pdf'
+        )
 
 
 class CustomUserViewSet(UserViewSet):
@@ -107,10 +186,3 @@ class CustomUserViewSet(UserViewSet):
         subscription = get_object_or_404(Subscribe, user=user, author=author)
         subscription.delete()
         return Response(status=HTTP_204_NO_CONTENT)
-
-
-# class FavoriteViewSet(mixins.CreateModelMixin,
-#                       mixins.DestroyModelMixin,
-#                       viewsets.GenericViewSet):
-#     queryset = Favorite.objects.all()
-#     serializer_class = FavoriteSerializer

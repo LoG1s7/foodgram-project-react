@@ -101,20 +101,39 @@ class Subscribe(models.Model):
         ]
 
 
-class Favorite(models.Model):
+class BaseFavoriteCartModel(models.Model):
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='favorite',
+        User, on_delete=models.CASCADE,
         verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name='favorite',
+        Recipe, on_delete=models.CASCADE,
         verbose_name='Рецепт'
     )
 
     class Meta:
+        abstract = True
+
+
+class Favorite(BaseFavoriteCartModel):
+
+    class Meta:
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранные'
+        default_related_name = 'favorite'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'recipe'], name='unique_recipe'),
             ]
+
+
+class Cart(BaseFavoriteCartModel):
+
+    class Meta:
+        verbose_name = 'Список покупок'
+        verbose_name_plural = 'Списки покупок'
+        default_related_name = 'cart'
+        # constraints = [
+        #     models.UniqueConstraint(
+        #         fields=['user', 'recipe'], name='unique_recipe'),
+        #     ]

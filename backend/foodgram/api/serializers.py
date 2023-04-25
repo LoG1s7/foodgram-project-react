@@ -7,7 +7,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from recipes.models import (Ingredient, Recipe, Tag, RecipeIngredient,
-                            Subscribe, Favorite)
+                            Subscribe, Favorite, Cart)
 from users.models import User
 import base64
 from django.core.files.base import ContentFile
@@ -94,8 +94,8 @@ class ReadRecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    # is_favorited = serializers.BooleanField()
-    # is_in_shopping_cart = serializers.BooleanField()
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
     ingredients = serializers.SerializerMethodField()
     author = CustomUserSerializer(read_only=True)
 
@@ -103,10 +103,28 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients = RecipeIngredient.objects.filter(recipe=obj).all()
         return ReadRecipeIngredientSerializer(ingredients, many=True).data
 
+    def get_is_favorited(self, obj):
+        request = self.context.get('request')
+        if request is not None:
+            current_user = request.user
+            if current_user.is_authenticated:
+                return Favorite.objects.filter(
+                    user=current_user, recipe=obj).exists()
+        return False
+
+    def get_is_in_shopping_cart(self, obj):
+        request = self.context.get('request')
+        if request is not None:
+            current_user = request.user
+            if current_user.is_authenticated:
+                return Cart.objects.filter(user=current_user,
+                                           recipe=obj).exists()
+        return False
+
     class Meta:
         fields = (
-            'id', 'tags', 'author', 'ingredients',
-            'name', 'image', 'text', 'cooking_time'
+            'id', 'tags', 'author', 'ingredients', 'is_favorited',
+            'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
         )
         model = Recipe
 
@@ -240,3 +258,39 @@ class FavoriteSerializer(serializers.ModelSerializer):
             'image': representation['recipe']['image'],
             'cooking_time': representation['recipe']['cooking_time'],
         }
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    recipe = SubscribeRecipeSerializer(read_only=True)
+
+    class Meta:
+        fields = ('recipe',)
+        model = Cart
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=('user', 'recipe'),
+                message='Нельзя добавить в список покупок дважды'
+            ),
+        ]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        return {
+            'id': representation['recipe']['id'],
+            'name': representation['recipe']['name'],
+            'image': representation['recipe']['image'],
+            'cooking_time': representation['recipe']['cooking_time'],
+        }
+
+
+# class DownloadShoppingCartSerializer(serializers.ModelSerializer):
+#     recipe = ReadRecipeIngredientSerializer(read_only=True)
+#
+#     class Meta:
+#         fields = ('recipe',)
+#         model = Cart
+#
+#     def to_representation(self, instance):
+#         representation = super().to_representation(instance)
+#         return representation['recipe']['id'], 'name': representation['recipe']['name'],

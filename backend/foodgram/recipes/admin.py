@@ -4,7 +4,7 @@ from import_export.admin import ImportExportModelAdmin
 from import_export.fields import Field
 from import_export.widgets import ForeignKeyWidget
 from recipes.models import (Ingredient, Recipe, Tag, RecipeIngredient,
-                            Subscribe, Favorite)
+                            Subscribe, Favorite, Cart)
 
 
 class TagResource(resources.ModelResource):
@@ -82,5 +82,11 @@ class SubscribeAdmin(admin.ModelAdmin):
 
 @admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ('user', 'recipe',)
+    empty_value_display = '-пусто-'
+
+
+@admin.register(Cart)
+class CartAdmin(admin.ModelAdmin):
     list_display = ('user', 'recipe',)
     empty_value_display = '-пусто-'
