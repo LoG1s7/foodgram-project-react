@@ -1,4 +1,5 @@
 # from api.filters import TitleFilter
+from api.filters import RecipeFilter
 from api.permissions import RecipesPermission
 # from django.db import IntegrityError
 import io
@@ -14,8 +15,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from api.serializers import (TagSerializer, IngredientSerializer,
                              RecipeSerializer, PostRecipeSerializer,
                              SubscribeSerializer, CustomUserSerializer,
-                             FavoriteSerializer, ShoppingCartSerializer)
-from rest_framework import status, viewsets
+                             FavoriteSerializer, ShoppingCartSerializer,
+                             ShortRecipeSerializer)
+from rest_framework import status, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
@@ -47,6 +49,8 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly, RecipesPermission)
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = RecipeFilter
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)

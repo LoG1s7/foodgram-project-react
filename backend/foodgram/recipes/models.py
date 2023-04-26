@@ -2,10 +2,12 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from users.models import User
+from recipes.validators import validate_name
 
 
 class BaseNameModel(models.Model):
-    name = models.CharField('Название', max_length=settings.LEN_TEXT)
+    name = models.CharField('Название', max_length=settings.LEN_TEXT,
+                            validators=[validate_name, ])
 
     def __str__(self):
         return self.name
@@ -72,7 +74,25 @@ class RecipeIngredient(models.Model):
     )
     ingredient = models.ForeignKey(
         Ingredient, on_delete=models.CASCADE, verbose_name='Ингредиент')
-    amount = models.IntegerField('Количество')
+    amount = models.PositiveSmallIntegerField(
+        'Количество',
+        validators=[MinValueValidator(
+            0.01,
+            message='Количество должно быть больше 0')]
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipe', 'ingredient'],
+                name='unique_ingredient_in_recipe'),
+        ]
+
+    def __str__(self):
+        return (
+            f'{self.ingredient.name} - {self.ingredient.measurement_unit}'
+            f' - {self.amount}'
+        )
 
 
 class Subscribe(models.Model):
@@ -100,6 +120,11 @@ class Subscribe(models.Model):
                 name='user_not_author'),
         ]
 
+    def __str__(self):
+        return (
+            f'Подписка {self.user.username} на {self.author.username}'
+        )
+
 
 class BaseFavoriteCartModel(models.Model):
     user = models.ForeignKey(
@@ -113,6 +138,11 @@ class BaseFavoriteCartModel(models.Model):
 
     class Meta:
         abstract = True
+
+    def __str__(self):
+        return (
+            f'{self.user.username} - {self.recipe.name}'
+        )
 
 
 class Favorite(BaseFavoriteCartModel):
@@ -133,7 +163,7 @@ class Cart(BaseFavoriteCartModel):
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
         default_related_name = 'cart'
-        # constraints = [
-        #     models.UniqueConstraint(
-        #         fields=['user', 'recipe'], name='unique_recipe'),
-        #     ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'], name='unique_recipe_in_cart'),
+            ]

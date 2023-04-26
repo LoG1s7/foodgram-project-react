@@ -12,8 +12,15 @@ from users.models import User
 import base64
 from django.core.files.base import ContentFile
 
+from users.validators import validate_me_name
+
 
 class CreateUserSerializer(UserCreateSerializer):
+    username = serializers.CharField(
+        max_length=settings.USER_LEN_NAME,
+        required=True,
+        validators=[UnicodeUsernameValidator(), validate_me_name],
+    )
 
     class Meta:
         fields = (
@@ -185,7 +192,7 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         return instance
 
 
-class SubscribeRecipeSerializer(serializers.ModelSerializer):
+class ShortRecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = (
@@ -196,7 +203,7 @@ class SubscribeRecipeSerializer(serializers.ModelSerializer):
 
 class SubscribeSerializer(serializers.ModelSerializer):
     author = CustomUserSerializer(read_only=True)
-    recipes = SubscribeRecipeSerializer(
+    recipes = ShortRecipeSerializer(
         many=True,
         read_only=True,
         source='author.recipes'
@@ -237,10 +244,11 @@ class SubscribeSerializer(serializers.ModelSerializer):
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
-    recipe = SubscribeRecipeSerializer(read_only=True)
+    user = CustomUserSerializer()
+    recipe = ShortRecipeSerializer()
 
     class Meta:
-        fields = ('recipe', )
+        fields = ('user', 'recipe')
         model = Favorite
         validators = [
             UniqueTogetherValidator(
@@ -261,7 +269,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
-    recipe = SubscribeRecipeSerializer(read_only=True)
+    recipe = ShortRecipeSerializer(read_only=True)
 
     class Meta:
         fields = ('recipe',)
@@ -282,15 +290,3 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
             'image': representation['recipe']['image'],
             'cooking_time': representation['recipe']['cooking_time'],
         }
-
-
-# class DownloadShoppingCartSerializer(serializers.ModelSerializer):
-#     recipe = ReadRecipeIngredientSerializer(read_only=True)
-#
-#     class Meta:
-#         fields = ('recipe',)
-#         model = Cart
-#
-#     def to_representation(self, instance):
-#         representation = super().to_representation(instance)
-#         return representation['recipe']['id'], 'name': representation['recipe']['name'],
