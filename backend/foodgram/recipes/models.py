@@ -1,8 +1,9 @@
-from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator
-from users.models import User
+from django.db import models
+
 from recipes.validators import validate_name
+from users.models import User
 
 
 class BaseNameModel(models.Model):

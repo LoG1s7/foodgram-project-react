@@ -1,9 +1,8 @@
-from api.views import (
-    TagViewSet, IngredientViewSet, RecipeViewSet,
-    CustomUserViewSet
-)
-from django.urls import include, path, re_path
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
+from api.views import (CustomUserViewSet, IngredientViewSet, RecipeViewSet,
+                       TagViewSet)
 
 router = DefaultRouter()
 
@@ -19,8 +18,6 @@ router.register(
 
 urlpatterns = [
     path('', include(router.urls)),
-    # re_path(r'users/(?P<user_id>\d+)/subscribe/',
-    #         CustomUserViewSet.as_view({'post': 'create'}), name='subscribe'),
     path('', include('djoser.urls')),
     path('auth/', include('djoser.urls.authtoken')),
 ]

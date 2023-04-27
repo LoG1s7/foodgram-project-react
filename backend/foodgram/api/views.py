@@ -1,35 +1,31 @@
-# from api.filters import TitleFilter
-from api.filters import RecipeFilter
-from api.permissions import RecipesPermission
-# from django.db import IntegrityError
 import io
+
+from django.db.models import F, Sum
 from django.http import FileResponse
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
-from django.db.models import Sum, F
-from rest_framework.permissions import (IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
-from api.serializers import (TagSerializer, IngredientSerializer,
-                             RecipeSerializer, PostRecipeSerializer,
-                             SubscribeSerializer, CustomUserSerializer,
-                             FavoriteSerializer, ShoppingCartSerializer,
-                             ShortRecipeSerializer)
-from rest_framework import status, viewsets, mixins
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
-from rest_framework.serializers import ValidationError
-from rest_framework.status import (HTTP_201_CREATED, HTTP_204_NO_CONTENT)
+from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
+from api.filters import RecipeFilter
+from api.permissions import RecipesPermission
+from api.serializers import (CustomUserSerializer, FavoriteSerializer,
+                             IngredientSerializer, PostRecipeSerializer,
+                             RecipeSerializer, ShoppingCartSerializer,
+                             SubscribeSerializer, TagSerializer)
 from foodgram.settings import ttfFile
-from recipes.models import (Ingredient, Recipe, Tag, Subscribe, Favorite,
-                            Cart, RecipeIngredient, )
-
+from recipes.models import (Cart, Favorite, Ingredient, Recipe,
+                            RecipeIngredient, Subscribe, Tag)
 from users.models import User
-from djoser.views import UserViewSet
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -49,6 +45,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly, RecipesPermission)
+    pagination_class = LimitOffsetPagination
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
 

@@ -1,17 +1,16 @@
+import base64
+
 from django.conf import settings
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.core.exceptions import BadRequest
-from djoser.serializers import UserSerializer, UserCreateSerializer
+from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import (Ingredient, Recipe, Tag, RecipeIngredient,
-                            Subscribe, Favorite, Cart)
+from recipes.models import (Cart, Favorite, Ingredient, Recipe,
+                            RecipeIngredient, Subscribe, Tag)
 from users.models import User
-import base64
-from django.core.files.base import ContentFile
-
 from users.validators import validate_me_name
 
 
@@ -188,8 +187,7 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         return instance
 
     def to_representation(self, instance):
-        instance = RecipeSerializer(instance).data
-        return instance
+        return RecipeSerializer(instance).data
 
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
