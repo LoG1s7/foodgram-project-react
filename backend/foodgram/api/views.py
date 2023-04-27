@@ -22,7 +22,7 @@ from api.serializers import (CustomUserSerializer, FavoriteSerializer,
                              IngredientSerializer, PostRecipeSerializer,
                              RecipeSerializer, ShoppingCartSerializer,
                              SubscribeSerializer, TagSerializer)
-from foodgram.settings import ttfFile
+from foodgram.settings import ttf_file
 from recipes.models import (Cart, Favorite, Ingredient, Recipe,
                             RecipeIngredient, Subscribe, Tag)
 from users.models import User
@@ -125,7 +125,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         pdfmetrics.registerFont(
             TTFont(
                 'Montserrat-Medium',
-                ttfFile
+                ttf_file
             )
         )
         buffer = io.BytesIO()
