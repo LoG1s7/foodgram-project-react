@@ -3,8 +3,8 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 
-from users.validators import (validate_me_name, validate_first_name,
-                              validate_last_name)
+from users.validators import (validate_first_name, validate_last_name,
+                              validate_me_name)
 
 
 class User(AbstractUser):
