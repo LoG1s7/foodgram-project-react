@@ -4,7 +4,6 @@ from django.db.models import F, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from djoser.views import UserViewSet
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
@@ -18,10 +17,10 @@ from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from api.filters import RecipeFilter
 from api.permissions import RecipesPermission
-from api.serializers import (CustomUserSerializer, FavoriteSerializer,
-                             IngredientSerializer, PostRecipeSerializer,
-                             RecipeSerializer, ShoppingCartSerializer,
-                             SubscribeSerializer, TagSerializer)
+from api.serializers import (FavoriteSerializer, IngredientSerializer,
+                             PostRecipeSerializer, RecipeSerializer,
+                             ShoppingCartSerializer, SubscribeSerializer,
+                             TagSerializer, UserSerializer)
 from foodgram.settings import ttf_file
 from recipes.models import (Cart, Favorite, Ingredient, Recipe,
                             RecipeIngredient, Subscribe, Tag)
@@ -62,6 +61,32 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_serializer_context(self):
         return {'request': self.request}
+
+    @staticmethod
+    def draw_shopping_cart_pdf(items):
+        pdfmetrics.registerFont(
+            TTFont(
+                'Montserrat-Medium',
+                ttf_file
+            )
+        )
+        buffer = io.BytesIO()
+        pdf_file = canvas.Canvas(buffer)
+        pdf_file.setFont('Montserrat-Medium', 24)
+        pdf_file.drawString(225, 800, 'Список покупок')
+        pdf_file.setFont('Montserrat-Medium', 16)
+        width = 70
+        height = 750
+        for i, item in enumerate(items, 1):
+            pdf_file.drawString(width, height, (
+                f'{i} - {item["name"]} - {item["units"]} - '
+                f'{item["total"]}'
+            ))
+            height -= 25
+        pdf_file.showPage()
+        pdf_file.save()
+        buffer.seek(0)
+        return buffer
 
     @action(
         methods=('POST', 'DELETE'),
@@ -122,38 +147,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
             units=F('ingredient__measurement_unit'),
             total=Sum('ingredient__recipeingredient__amount')
         ).order_by('name')
-        pdfmetrics.registerFont(
-            TTFont(
-                'Montserrat-Medium',
-                ttf_file
-            )
-        )
-        buffer = io.BytesIO()
-        pdf_file = canvas.Canvas(buffer)
-        pdf_file.setFont('Montserrat-Medium', 24)
-        pdf_file.drawString(225, 800, 'Список покупок')
-        pdf_file.setFont('Montserrat-Medium', 16)
-        width = 70
-        height = 750
-        for i, item in enumerate(items, 1):
-            pdf_file.drawString(width, height, (
-                f'{i} - {item["name"]} - {item["units"]} - '
-                f'{item["total"]}'
-            ))
-            height -= 25
-        pdf_file.showPage()
-        pdf_file.save()
-        buffer.seek(0)
         return FileResponse(
-            buffer,
+            self.draw_shopping_cart_pdf(items),
             as_attachment=True,
             filename='buy_list.pdf'
         )
 
 
-class CustomUserViewSet(UserViewSet):
+class CustomUserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
+    serializer_class = UserSerializer
 
     @action(
         methods=('GET', ),

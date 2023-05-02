@@ -1,34 +1,14 @@
-import base64
-
-from django.conf import settings
-from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
-from djoser.serializers import UserCreateSerializer, UserSerializer
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from recipes.models import (Cart, Favorite, Ingredient, Recipe,
                             RecipeIngredient, Subscribe, Tag)
 from users.models import User
-from users.validators import validate_me_name
 
 
-class CreateUserSerializer(UserCreateSerializer):
-    username = serializers.CharField(
-        max_length=settings.USER_LEN_NAME,
-        required=True,
-        validators=[UnicodeUsernameValidator(), validate_me_name],
-    )
-
-    class Meta:
-        fields = (
-            'email', 'id', 'username', 'first_name', 'last_name', 'password'
-        )
-        model = User
-
-
-class CustomUserSerializer(UserSerializer):
+class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
@@ -46,16 +26,6 @@ class CustomUserSerializer(UserSerializer):
                 return Subscribe.objects.filter(user=current_user,
                                                 author=obj).exists()
         return False
-
-
-class Base64ImageField(serializers.ImageField):
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-
-        return super().to_internal_value(data)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -103,7 +73,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     ingredients = serializers.SerializerMethodField()
-    author = CustomUserSerializer(read_only=True)
+    author = UserSerializer(read_only=True)
 
     def get_ingredients(self, obj):
         ingredients = RecipeIngredient.objects.filter(recipe=obj).all()
@@ -136,7 +106,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class PostRecipeSerializer(serializers.ModelSerializer):
-    author = CustomUserSerializer(read_only=True)
+    author = UserSerializer(read_only=True)
     ingredients = RecipeIngredientSerializer(many=True, )
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -156,15 +126,16 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
-        for ingredient in ingredients:
-            current_ingredient = get_object_or_404(
-                Ingredient, pk=ingredient['id'].pk
-            )
-            RecipeIngredient.objects.create(
-                ingredient=current_ingredient,
+        recipe_ingredients = [
+            RecipeIngredient(
+                ingredient=get_object_or_404(
+                    Ingredient, pk=ingredient['id'].pk
+                ),
                 recipe=recipe,
                 amount=ingredient['amount']
-            )
+            ) for ingredient in ingredients
+        ]
+        RecipeIngredient.objects.bulk_create(recipe_ingredients)
         return recipe
 
     def update(self, instance, validated_data):
@@ -174,15 +145,16 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         instance.tags.clear()
         instance.tags.set(tags)
         instance.ingredients.clear()
-        for ingredient in ingredients:
-            current_ingredient = get_object_or_404(
-                Ingredient, pk=ingredient['id'].pk
-            )
-            RecipeIngredient.objects.create(
-                ingredient=current_ingredient,
+        recipe_ingredients = [
+            RecipeIngredient(
+                ingredient=get_object_or_404(
+                    Ingredient, pk=ingredient['id'].pk
+                ),
                 recipe=instance,
                 amount=ingredient['amount']
-            )
+            ) for ingredient in ingredients
+        ]
+        RecipeIngredient.objects.bulk_create(recipe_ingredients)
         instance.save()
         return instance
 
@@ -200,7 +172,7 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
 
 
 class SubscribeSerializer(serializers.ModelSerializer):
-    author = CustomUserSerializer(read_only=True)
+    author = UserSerializer(read_only=True)
     recipes = ShortRecipeSerializer(
         many=True,
         read_only=True,
@@ -242,7 +214,7 @@ class SubscribeSerializer(serializers.ModelSerializer):
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
-    user = CustomUserSerializer()
+    user = UserSerializer()
     recipe = ShortRecipeSerializer()
 
     class Meta:

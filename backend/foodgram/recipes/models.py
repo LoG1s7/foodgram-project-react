@@ -1,4 +1,5 @@
 from django.conf import settings
+from colorfield.fields import ColorField
 from django.core.validators import MinValueValidator
 from django.db import models
 
@@ -29,7 +30,7 @@ class Ingredient(BaseNameModel):
 
 
 class Tag(BaseNameModel):
-    color = models.CharField('Цвет в HEX', max_length=7)
+    color = ColorField('Цвет в HEX')
     slug = models.SlugField(
         'Уникальный слаг',
         max_length=settings.LEN_TEXT,
@@ -74,12 +75,12 @@ class RecipeIngredient(models.Model):
         Recipe, on_delete=models.CASCADE, verbose_name='Рецепт'
     )
     ingredient = models.ForeignKey(
-        Ingredient, on_delete=models.CASCADE, verbose_name='Ингредиент')
+        Ingredient, on_delete=models.CASCADE, verbose_name='Ингредиент',
+        related_name='+')
     amount = models.PositiveSmallIntegerField(
         'Количество',
         validators=[MinValueValidator(
-            0.01,
-            message='Количество должно быть больше 0')]
+            1, message='Количество должно быть больше 0')]
     )
 
     class Meta:
@@ -134,7 +135,8 @@ class BaseFavoriteCartModel(models.Model):
     )
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE,
-        verbose_name='Рецепт'
+        verbose_name='Рецепт',
+        related_name='+'
     )
 
     class Meta:
