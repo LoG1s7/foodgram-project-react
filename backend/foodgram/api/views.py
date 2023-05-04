@@ -25,6 +25,7 @@ from foodgram.settings import ttf_file
 from recipes.models import (Cart, Favorite, Ingredient, Recipe,
                             RecipeIngredient, Subscribe, Tag)
 from users.models import User
+from djoser.views import UserViewSet
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -145,7 +146,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).annotate(
             name=F('ingredient__name'),
             units=F('ingredient__measurement_unit'),
-            total=Sum('ingredient__recipeingredient__amount')
+            total=Sum('amount')
         ).order_by('name')
         return FileResponse(
             self.draw_shopping_cart_pdf(items),
@@ -154,9 +155,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
 
-class CustomUserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+class SubscribeUserViewSet(UserViewSet):
 
     @action(
         methods=('GET', ),
@@ -178,9 +177,9 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         detail=True,
         permission_classes=[IsAuthenticated, ]
     )
-    def subscribe(self, request, id=None):
+    def subscribe(self, request, pk=None):
         user = request.user
-        author = get_object_or_404(User, id=id)
+        author = get_object_or_404(User, pk=pk)
         if request.method == 'POST':
             subscribe = Subscribe.objects.create(user=user, author=author)
             serializer = SubscribeSerializer(

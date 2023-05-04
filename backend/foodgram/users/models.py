@@ -3,8 +3,8 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 
-from users.validators import (validate_first_name, validate_last_name,
-                              validate_me_name)
+from recipes.validators import validate_name
+from users.validators import validate_me_name
 
 
 class User(AbstractUser):
@@ -21,23 +21,26 @@ class User(AbstractUser):
         max_length=settings.USER_LEN_NAME,
         unique=True,
         help_text=(
-            'Required. 150 characters or fewer. '
-            'Letters, digits and @/./+/-/_ only.'),
+            'Необходимое поле. 150 или менее символов. '
+            'Только буквы, цифры и эти символы: "@/./+/-/_" .'),
         validators=[username_validator, validate_me_name],
         error_messages={
-            'unique': ("A user with that username already exists."),
+            'unique': "Пользователь с таким именем уже существует",
         },
     )
     first_name = models.CharField(
         'Имя',
         max_length=settings.USER_LEN_NAME,
-        validators=(validate_first_name, )
+        validators=(validate_name, )
     )
     last_name = models.CharField(
         'Фамилия',
         max_length=settings.USER_LEN_NAME,
-        validators=(validate_last_name,)
+        validators=(validate_name, )
     )
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
 
     class Meta:
         verbose_name = 'Пользователь'

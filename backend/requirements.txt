@@ -13,3 +13,4 @@ psycopg2-binary==2.9.5
 reportlab==3.6.12
 drf-extra-fields==3.4.1
 django-colorfield==0.8.0
+django-cors-headers==3.14.0

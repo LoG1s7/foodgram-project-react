@@ -19,6 +19,6 @@ class RecipeFilter(rest_framework.FilterSet):
         return Recipe.objects.filter(
             favorite__user=self.request.user)
 
-    def is_in_shopping_cart_filter(self, queryset, name, value):
+    def is_in_shopping_cart_filter(self, queryset, name, obj):
         return Recipe.objects.filter(
             cart__user=self.request.user)

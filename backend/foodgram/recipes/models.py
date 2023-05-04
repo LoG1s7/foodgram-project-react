@@ -131,7 +131,7 @@ class Subscribe(models.Model):
 class BaseFavoriteCartModel(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE,
-        verbose_name='Пользователь'
+        verbose_name='Пользователь',
     )
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE,
