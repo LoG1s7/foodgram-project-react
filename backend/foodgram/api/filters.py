@@ -16,9 +16,13 @@ class RecipeFilter(rest_framework.FilterSet):
         fields = ('tags', 'author', 'is_favorited', 'is_in_shopping_cart')
 
     def is_favorite_filter(self, queryset, name, value):
-        return Recipe.objects.filter(
-            favorite__user=self.request.user)
 
-    def is_in_shopping_cart_filter(self, queryset, name, obj):
-        return Recipe.objects.filter(
-            cart__user=self.request.user)
+        if value:
+            return queryset.filter(favorite__user=self.request.user)
+        return queryset
+
+    def is_in_shopping_cart_filter(self, queryset, name, value):
+
+        if value:
+            return queryset.filter(cart__user=self.request.user)
+        return queryset

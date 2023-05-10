@@ -20,7 +20,7 @@ from api.permissions import RecipesPermission
 from api.serializers import (FavoriteSerializer, IngredientSerializer,
                              PostRecipeSerializer, RecipeSerializer,
                              ShoppingCartSerializer, SubscribeSerializer,
-                             TagSerializer, UserSerializer)
+                             TagSerializer, )
 from foodgram.settings import ttf_file
 from recipes.models import (Cart, Favorite, Ingredient, Recipe,
                             RecipeIngredient, Subscribe, Tag)

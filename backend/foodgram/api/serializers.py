@@ -72,12 +72,8 @@ class ReadRecipeIngredientSerializer(serializers.ModelSerializer):
 class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    ingredients = serializers.SerializerMethodField()
+    ingredients = ReadRecipeIngredientSerializer(many=True)
     author = UserSerializer(read_only=True)
-
-    def get_ingredients(self, obj):
-        ingredients = RecipeIngredient.objects.filter(recipe=obj).all()
-        return ReadRecipeIngredientSerializer(ingredients, many=True).data
 
     def get_is_favorited(self, obj):
         request = self.context.get('request')
@@ -105,9 +101,28 @@ class RecipeSerializer(serializers.ModelSerializer):
         model = Recipe
 
 
+class RecipeIngredientPostSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(write_only=True)
+    amount = serializers.IntegerField(required=True)
+    name = serializers.SerializerMethodField()
+    measurement_unit = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RecipeIngredient
+        fields = ('id', 'amount', 'name', 'measurement_unit')
+
+    def get_measurement_unit(self, ingredient):
+        measurement_unit = ingredient.ingredient.measurement_unit
+        return measurement_unit
+
+    def get_name(self, ingredient):
+        name = ingredient.ingredient.name
+        return name
+
+
 class PostRecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
-    ingredients = RecipeIngredientSerializer(many=True, )
+    ingredients = RecipeIngredientPostSerializer(many=True, )
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=Tag.objects.all()
@@ -129,9 +144,8 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         recipe_ingredients = [
             RecipeIngredient(
                 ingredient=get_object_or_404(
-                    Ingredient, pk=ingredient['id'].pk
+                    Ingredient.objects.filter(id=ingredient['id'])
                 ),
-                recipe=recipe,
                 amount=ingredient['amount']
             ) for ingredient in ingredients
         ]
@@ -148,9 +162,8 @@ class PostRecipeSerializer(serializers.ModelSerializer):
         recipe_ingredients = [
             RecipeIngredient(
                 ingredient=get_object_or_404(
-                    Ingredient, pk=ingredient['id'].pk
+                    Ingredient, pk=ingredient['id']
                 ),
-                recipe=instance,
                 amount=ingredient['amount']
             ) for ingredient in ingredients
         ]
