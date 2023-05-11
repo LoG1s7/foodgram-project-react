@@ -4,6 +4,7 @@ from django.db.models import F, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
@@ -20,12 +21,11 @@ from api.permissions import RecipesPermission
 from api.serializers import (FavoriteSerializer, IngredientSerializer,
                              PostRecipeSerializer, RecipeSerializer,
                              ShoppingCartSerializer, SubscribeSerializer,
-                             TagSerializer, )
+                             TagSerializer)
 from foodgram.settings import ttf_file
 from recipes.models import (Cart, Favorite, Ingredient, Recipe,
                             RecipeIngredient, Subscribe, Tag)
 from users.models import User
-from djoser.views import UserViewSet
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -177,9 +177,9 @@ class SubscribeUserViewSet(UserViewSet):
         detail=True,
         permission_classes=[IsAuthenticated, ]
     )
-    def subscribe(self, request, pk=None):
+    def subscribe(self, request, id=None):
         user = request.user
-        author = get_object_or_404(User, pk=pk)
+        author = get_object_or_404(User, id=id)
         if request.method == 'POST':
             subscribe = Subscribe.objects.create(user=user, author=author)
             serializer = SubscribeSerializer(
