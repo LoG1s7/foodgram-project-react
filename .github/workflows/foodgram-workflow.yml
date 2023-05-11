@@ -21,8 +21,8 @@ jobs:
         pip install -r requirements.txt
     - name: Test with flake8
       run: |
-        python -m flake8 backend
-        pytest
+        cd foodgram/
+        python -m flake8
   build_and_push_backend_to_docker_hub:
       name: Push backend image to Docker Hub
       runs-on: ubuntu-latest

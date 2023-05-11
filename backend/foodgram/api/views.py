@@ -1,10 +1,19 @@
 import io
 
+from api.filters import RecipeFilter
+from api.permissions import RecipesPermission
+from api.serializers import (FavoriteSerializer, IngredientSerializer,
+                             PostRecipeSerializer, RecipeSerializer,
+                             ShoppingCartSerializer, SubscribeSerializer,
+                             TagSerializer)
 from django.db.models import F, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
+from foodgram.settings import ttf_file
+from recipes.models import (Cart, Favorite, Ingredient, Recipe,
+                            RecipeIngredient, Subscribe, Tag)
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
@@ -15,16 +24,6 @@ from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
-
-from api.filters import RecipeFilter
-from api.permissions import RecipesPermission
-from api.serializers import (FavoriteSerializer, IngredientSerializer,
-                             PostRecipeSerializer, RecipeSerializer,
-                             ShoppingCartSerializer, SubscribeSerializer,
-                             TagSerializer)
-from foodgram.settings import ttf_file
-from recipes.models import (Cart, Favorite, Ingredient, Recipe,
-                            RecipeIngredient, Subscribe, Tag)
 from users.models import User
 
 
