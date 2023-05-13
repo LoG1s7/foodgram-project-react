@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from foodgram.settings import ttf_file
+from paginators import LimitPagination
 from recipes.models import (Cart, Favorite, Ingredient, Recipe,
                             RecipeIngredient, Subscribe, Tag)
 from reportlab.pdfbase import pdfmetrics
@@ -19,7 +20,6 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
@@ -44,7 +44,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (IsAuthenticatedOrReadOnly, RecipesPermission)
-    pagination_class = LimitOffsetPagination
+    pagination_class = LimitPagination
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
 
@@ -155,6 +155,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class SubscribeUserViewSet(UserViewSet):
+    pagination_class = LimitPagination
 
     @action(
         methods=('GET', ),
