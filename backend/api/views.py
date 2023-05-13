@@ -1,6 +1,7 @@
 import io
 
 from api.filters import RecipeFilter
+from api.paginators import LimitPagination
 from api.permissions import RecipesPermission
 from api.serializers import (FavoriteSerializer, IngredientSerializer,
                              PostRecipeSerializer, RecipeSerializer,
@@ -12,7 +13,6 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from foodgram.settings import ttf_file
-from api.paginators import LimitPagination
 from recipes.models import (Cart, Favorite, Ingredient, Recipe,
                             RecipeIngredient, Subscribe, Tag)
 from reportlab.pdfbase import pdfmetrics
