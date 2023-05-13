@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from foodgram.settings import ttf_file
-from paginators import LimitPagination
+from api.paginators import LimitPagination
 from recipes.models import (Cart, Favorite, Ingredient, Recipe,
                             RecipeIngredient, Subscribe, Tag)
 from reportlab.pdfbase import pdfmetrics
