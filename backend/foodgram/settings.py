@@ -24,9 +24,9 @@ ttf_file = os.path.join(FONT_DIR, 'Montserrat-Medium.ttf')
 SECRET_KEY = os.getenv('SECRET_KEY', default='SUP3R-S3CR3T-K3Y-F0R-MY-PR0J3CT')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [os.getenv('HOST', default='127.0.0.1'), ]
 
 
 # Application definition
@@ -104,6 +104,13 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', default=5432)
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#     }
+# }
 
 
 # Password validation
