@@ -18,6 +18,8 @@ services:
       - db
     env_file:
       - ./.env
+    ports:
+      - "8000:8000"
 
   frontend:
     image: log1s7/foodgram-frontend:latest
