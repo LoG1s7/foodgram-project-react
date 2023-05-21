@@ -1,9 +1,18 @@
-from django_filters import filters, rest_framework
-from recipes.models import Recipe
+from django_filters import rest_framework
+from django_filters.rest_framework import FilterSet, filters
+from recipes.models import Ingredient, Recipe
+
+
+class IngredientFilter(FilterSet):
+    name = filters.CharFilter(lookup_expr='startswith')
+
+    class Meta:
+        model = Ingredient
+        fields = ('name',)
 
 
 class RecipeFilter(rest_framework.FilterSet):
-    tag = filters.AllValuesMultipleFilter(field_name='tags__slug')
+    tags = filters.AllValuesMultipleFilter(field_name='tags__slug')
     author = filters.NumberFilter(field_name='author__id')
     is_favorited = filters.NumberFilter(
         method='is_favorite_filter')

@@ -1,7 +1,8 @@
 from django.contrib import admin
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
-from recipes.models import Cart, Favorite, Ingredient, Recipe, Subscribe, Tag
+from recipes.models import (Cart, Favorite, Ingredient, Recipe,
+                            RecipeIngredient, Subscribe, Tag)
 
 
 class TagResource(resources.ModelResource):
@@ -36,17 +37,8 @@ class IngredientAdmin(ImportExportModelAdmin):
     empty_value_display = '-пусто-'
 
 
-# class RecipeIngredientResource(resources.ModelResource):
-#     ingredient = Field(attribute='ingredient', column_name='ingredient_id',
-#                        widget=ForeignKeyWidget(Ingredient))
-#
-#     class Meta:
-#         model = RecipeIngredient
-#         columns = ('id', 'ingredient_id', 'amount')
-#
-#
-# class RecipeIngredientInline(admin.TabularInline):
-#     model = RecipeIngredient
+class RecipeIngredientInline(admin.TabularInline):
+    model = RecipeIngredient
 
 
 class RecipeResource(resources.ModelResource):
@@ -62,10 +54,15 @@ class RecipeResource(resources.ModelResource):
 @admin.register(Recipe)
 class RecipeAdmin(ImportExportModelAdmin):
     resource_classes = [RecipeResource, ]
-    list_display = ('id', 'author', 'image', 'name', 'text', 'cooking_time',)
-    search_fields = ('name',)
-    list_filter = ('name',)
+    list_display = ('id', 'author', 'name', 'in_favorite')
+    search_fields = ('name', 'author', 'tags')
+    inlines = (RecipeIngredientInline, )
+    list_filter = ('name', 'author', 'tags')
     empty_value_display = '-пусто-'
+
+    @admin.display(description='В избранном')
+    def in_favorite(self, obj):
+        return obj.favorite.count()
 
 
 @admin.register(Subscribe)

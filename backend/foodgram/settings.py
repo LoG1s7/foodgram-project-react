@@ -41,7 +41,6 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'rest_framework.authtoken',
-    # 'corsheaders',
     'django_filters',
     'djoser',
     'colorfield',
@@ -56,19 +55,12 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # 'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-# CORS_ORIGIN_ALLOW_ALL = True
-# CORS_URLS_REGEX = r'^/api/.*$'
-# CORS_ALLOWED_ORIGINS = [
-#     'http://localhost:8000',
-# ]
 
 ROOT_URLCONF = 'foodgram.urls'
 
@@ -97,20 +89,13 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', default='django.db.backends.postgresql'),
-        'NAME': os.getenv('DB_NAME', default='postgres'),
-        'USER': os.getenv('POSTGRES_USER', default='postgres'),
+        'NAME': os.getenv('DB_NAME', default='postgres1'),
+        'USER': os.getenv('POSTGRES_USER', default='posgtres'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='postgres'),
         'HOST': os.getenv('DB_HOST', default='db'),
         'PORT': os.getenv('DB_PORT', default=5432)
     }
 }
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#     }
-# }
 
 
 # Password validation
@@ -136,7 +121,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru-ru'
 
 TIME_ZONE = 'UTC'
 
@@ -163,18 +148,12 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
     ),
-    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    # 'PAGE_SIZE': 6,
-    # 'DEFAULT_FILTER_BACKENDS': [
-    #     'rest_framework.filters.SearchFilter',
-    # ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
 }
 
 DJOSER = {
-    'HIDE_USERS': False,
     'SERIALIZERS': {
         'user': 'api.serializers.UserSerializer',
         'current_user': 'api.serializers.UserSerializer',
@@ -182,7 +161,8 @@ DJOSER = {
     'PERMISSIONS': {
         'user': ('rest_framework.permissions.AllowAny',),
         'user_list': ('rest_framework.permissions.AllowAny',)
-    }
+    },
+    'HIDE_USERS': False,
 }
 
 # Default primary key field type

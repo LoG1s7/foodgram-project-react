@@ -1,6 +1,6 @@
 import io
 
-from api.filters import RecipeFilter
+from api.filters import IngredientFilter, RecipeFilter
 from api.paginators import LimitPagination
 from api.permissions import RecipesPermission
 from api.serializers import (FavoriteSerializer, IngredientSerializer,
@@ -20,7 +20,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from users.models import User
@@ -34,8 +34,8 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    search_fields = ('^name',)
-    lookup_field = 'name'
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -52,9 +52,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
     def get_serializer_class(self):
-        if self.action in ('create', 'partial_update', 'destroy'):
-            return PostRecipeSerializer
-        return RecipeSerializer
+        if self.request.method in SAFE_METHODS:
+            return RecipeSerializer
+        return PostRecipeSerializer
 
     def get_serializer_context(self):
         return {'request': self.request}

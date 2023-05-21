@@ -87,7 +87,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
-            cd foodgram-project/
+            cd foodgram-project/infra/
             sudo docker compose rm backend
             sudo docker compose pull backend
             sudo docker compose rm frontend
