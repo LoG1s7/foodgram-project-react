@@ -198,16 +198,19 @@ class SubscribeSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         request = self.context.get('request')
         limit = request.GET.get('recipes_limit')
-        return {
+        result = {
             'email': representation['author']['email'],
             'id': representation['author']['id'],
             'username': representation['author']['username'],
             'first_name': representation['author']['first_name'],
             'last_name': representation['author']['last_name'],
             'is_subscribed': representation['author']['is_subscribed'],
-            'recipes': representation['recipes'][:int(limit)],
+            'recipes': representation['recipes'],
             'recipes_count': representation['recipes_count'],
         }
+        if limit:
+            result['recipes'] = representation['recipes'][:int(limit)]
+        return result
 
     def validate_author(self, author):
         if self.context['request'].user == author:
