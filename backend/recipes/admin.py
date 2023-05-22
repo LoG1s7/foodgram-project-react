@@ -40,6 +40,7 @@ class IngredientAdmin(ImportExportModelAdmin):
 
 class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
+    min_num = 1
 
 
 class RecipeResource(resources.ModelResource):
@@ -52,19 +53,8 @@ class RecipeResource(resources.ModelResource):
         )
 
 
-class RecipeForm(ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['summary'].required = True
-
-    class Meta:
-        model = Recipe
-        fields = '__all__'
-
-
 @admin.register(Recipe)
 class RecipeAdmin(ImportExportModelAdmin):
-    form = RecipeForm
     resource_classes = [RecipeResource, ]
     list_display = ('id', 'author', 'name', 'in_favorite')
     search_fields = ('name', 'author', 'tags')
