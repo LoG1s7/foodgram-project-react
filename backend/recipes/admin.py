@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.forms import ModelForm
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from recipes.models import (Cart, Favorite, Ingredient, Recipe,
