@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.forms import ModelForm
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from recipes.models import (Cart, Favorite, Ingredient, Recipe,
@@ -51,8 +52,19 @@ class RecipeResource(resources.ModelResource):
         )
 
 
+class RecipeForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['summary'].required = True
+
+    class Meta:
+        model = Recipe
+        fields = '__all__'
+
+
 @admin.register(Recipe)
 class RecipeAdmin(ImportExportModelAdmin):
+    form = RecipeForm
     resource_classes = [RecipeResource, ]
     list_display = ('id', 'author', 'name', 'in_favorite')
     search_fields = ('name', 'author', 'tags')
